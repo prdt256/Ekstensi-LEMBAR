@@ -1,0 +1,11 @@
+{
+  "id": "sample-source",
+  "name": "Sample Source",
+  "baseUrl": "https://example-comic-site.com",
+  "version": "1.0.0",
+  "lang": "id",
+  "icon": "https://example-comic-site.com/favicon.ico",
+  "nsfw": false,
+  "active": true,
+  "description": "Contoh ekstensi sumber komik untuk demonstrasi alur kerja Lembar. Mengembalikan data mock tanpa melakukan request HTTP nyata."
+}

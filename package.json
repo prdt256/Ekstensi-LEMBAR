@@ -1,0 +1,32 @@
+{
+  "name": "ekstensi-lembar",
+  "version": "1.0.0",
+  "description": "JavaScript extension repository for the Lembar comic reader app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:ext": "node scripts/test-extension.js",
+    "lint": "eslint src/ --ext .js",
+    "new": "node scripts/new-extension.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0",
+    "jest": "^29.7.0",
+    "eslint": "^9.0.0",
+    "cheerio": "^1.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "testMatch": ["**/tests/**/*.test.js"]
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["lembar", "komik", "extension", "scraper", "manga"],
+  "author": "Lembar Team",
+  "license": "MIT"
+}

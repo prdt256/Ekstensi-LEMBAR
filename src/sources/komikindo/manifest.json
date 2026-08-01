@@ -1,0 +1,11 @@
+{
+  "id": "komikindo",
+  "name": "KomikIndo",
+  "baseUrl": "https://komikindo.ch",
+  "version": "1.0.0",
+  "lang": "id",
+  "icon": "https://komikindo.ch/favicon.ico",
+  "nsfw": false,
+  "active": true,
+  "description": "Ekstensi sumber komik untuk KomikIndo."
+}

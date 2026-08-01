@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "generated_at": "2026-08-01T07:30:34.117Z",
+  "extensions": [
+    {
+      "id": "ezmanga",
+      "name": "EZManga",
+      "version": "1.0.0",
+      "lang": "en",
+      "icon": "https://ezmanga.org/favicon.ico",
+      "nsfw": false,
+      "bundle_url": "dist/ezmanga.js"
+    },
+    {
+      "id": "komikindo",
+      "name": "KomikIndo",
+      "version": "1.0.0",
+      "lang": "id",
+      "icon": "https://komikindo.ch/favicon.ico",
+      "nsfw": false,
+      "bundle_url": "dist/komikindo.js"
+    },
+    {
+      "id": "sample-source",
+      "name": "Sample Source",
+      "version": "1.0.0",
+      "lang": "id",
+      "icon": "https://example-comic-site.com/favicon.ico",
+      "nsfw": false,
+      "bundle_url": "dist/sample-source.js"
+    }
+  ]
+}
