@@ -170,10 +170,11 @@ Output yang dihasilkan di folder `dist/`:
 Ekstensi JavaScript yang sudah di-build (`dist/<source-id>.js`) siap dikonsumsi oleh aplikasi Android **Lembar** dengan 2 metode utama:
 
 ### 1. Menggunakan Repositori Online (Rekomendasi)
-1. Push/Host folder `dist/` ke **GitHub Pages**, **Raw GitHub**, atau **CDN**.
-2. Di aplikasi Android, panggil endpoint `index.json` (misal: `https://raw.githubusercontent.com/username/Ekstensi-LEMBAR/main/dist/index.json`).
-3. Aplikasi akan menampilkan daftar ekstensi yang tersedia.
-4. Ketika user memasang ekstensi, Android mengunduh file `.js` sesuai `bundle_url` dan menyimpannya di penyimpanan lokal aplikasi (*Internal Storage*).
+1. Push folder `dist/` ke repositori GitHub ini.
+2. Di aplikasi Android, panggil endpoint `index.json` langsung via URL Raw GitHub:
+   `https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/index.json`
+3. Aplikasi akan menampilkan daftar semua ekstensi yang tersedia secara dinamis.
+4. Ketika user memasang ekstensi, Android mengunduh file `.js` (misal: `https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/komikindo.js`) dan menyimpannya di penyimpanan internal aplikasi.
 
 ### 2. Penggunaan Lokal (Assets / Offline Mode)
 Jika ingin menyertakan ekstensi secara langsung saat aplikasi dibuild:
