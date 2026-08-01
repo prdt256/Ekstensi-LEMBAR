@@ -174,7 +174,7 @@ Ekstensi JavaScript yang sudah di-build (`dist/<source-id>.js`) siap dikonsumsi 
 2. Di aplikasi Android, panggil endpoint `index.json` langsung via URL Raw GitHub:
    `https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/index.json`
 3. Aplikasi akan menampilkan daftar semua ekstensi yang tersedia secara dinamis.
-4. Ketika user memasang ekstensi, Android mengunduh file `.js` (misal: markdown``` `https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/komikindo.js`) dan menyimpannya di penyimpanan internal aplikasi.
+4. Ketika user memasang ekstensi, Android mengunduh file `.js` (misal: bash``` `https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/komikindo.js` ```) dan menyimpannya di penyimpanan internal aplikasi.
 
 ### 2. Penggunaan Lokal (Assets / Offline Mode)
 Jika ingin menyertakan ekstensi secara langsung saat aplikasi dibuild:
