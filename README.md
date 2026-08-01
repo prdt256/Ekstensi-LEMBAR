@@ -165,6 +165,45 @@ Output yang dihasilkan di folder `dist/`:
 
 ---
 
+## 📱 Cara Penggunaan di Aplikasi Lembar (Android Template)
+
+Ekstensi JavaScript yang sudah di-build (`dist/<source-id>.js`) siap dikonsumsi oleh aplikasi Android **Lembar** dengan 2 metode utama:
+
+### 1. Menggunakan Repositori Online (Rekomendasi)
+1. Push/Host folder `dist/` ke **GitHub Pages**, **Raw GitHub**, atau **CDN**.
+2. Di aplikasi Android, panggil endpoint `index.json` (misal: `https://raw.githubusercontent.com/username/Ekstensi-LEMBAR/main/dist/index.json`).
+3. Aplikasi akan menampilkan daftar ekstensi yang tersedia.
+4. Ketika user memasang ekstensi, Android mengunduh file `.js` sesuai `bundle_url` dan menyimpannya di penyimpanan lokal aplikasi (*Internal Storage*).
+
+### 2. Penggunaan Lokal (Assets / Offline Mode)
+Jika ingin menyertakan ekstensi secara langsung saat aplikasi dibuild:
+1. Salin file dari folder `dist/` (misal `komikindo.js` dan `index.json`) ke folder Android:
+   `app/src/main/assets/extensions/`
+2. Aplikasi dapat membaca `index.json` lokal secara offline.
+
+### 3. Cara Meng-eksekusi di Android Engine (JavaScript Engine)
+Aplikasi Android (QuickJS / Duktape / WebView JS Engine) cukup mengeksekusi file `.js` ekstensi, lalu memanggil fungsi global yang di-export:
+
+- Setiap file `.js` di folder `dist` dibungkus dalam format IIFE dengan variabel global bernama `LembarExt_<source_id_di-snake_case>`.
+- **Contoh untuk `komikindo.js`**:
+
+```javascript
+// 1. Load / Evaluasi script komikindo.js di JS Engine Android
+// Variabel global `LembarExt_komikindo` akan otomatis tersedia
+
+// 2. Mengambil Komik Populer
+const popularList = await LembarExt_komikindo.source.getPopular(1);
+
+// 3. Mengambil Detail Komik
+const detail = await LembarExt_komikindo.source.getDetail('/komik/one-piece/');
+
+// 4. Mengambil Gambar Chapter
+const pages = await LembarExt_komikindo.source.getPageList('/one-piece-chapter-1000/');
+```
+
+
+---
+
 ## 🤝 Kontribusi
 
 1. Fork repositori ini.
