@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-01T07:30:34.117Z",
+  "generated_at": "2026-08-01T08:10:21.271Z",
   "extensions": [
     {
       "id": "ezmanga",
@@ -9,7 +9,7 @@
       "lang": "en",
       "icon": "https://ezmanga.org/favicon.ico",
       "nsfw": false,
-      "bundle_url": "dist/ezmanga.js"
+      "bundle_url": "https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/ezmanga.js"
     },
     {
       "id": "komikindo",
@@ -18,7 +18,7 @@
       "lang": "id",
       "icon": "https://komikindo.ch/favicon.ico",
       "nsfw": false,
-      "bundle_url": "dist/komikindo.js"
+      "bundle_url": "https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/komikindo.js"
     },
     {
       "id": "sample-source",
@@ -27,7 +27,7 @@
       "lang": "id",
       "icon": "https://example-comic-site.com/favicon.ico",
       "nsfw": false,
-      "bundle_url": "dist/sample-source.js"
+      "bundle_url": "https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/sample-source.js"
     }
   ]
 }

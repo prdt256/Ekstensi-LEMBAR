@@ -131,6 +131,25 @@ export async function postForm(url, formData, headers = {}, timeoutMs = DEFAULT_
  * @private
  */
 async function _fetch(url, options, timeoutMs) {
+  // Jika berjalan di QuickJS Android dan fetch tidak tersedia, gunakan NetworkBridge
+  if (typeof fetch === 'undefined' && typeof NetworkBridge !== 'undefined') {
+    if (options.method === 'GET') {
+      const responseText = NetworkBridge.get(url);
+      return {
+        ok: true,
+        text: async () => responseText,
+        json: async () => JSON.parse(responseText),
+      };
+    } else {
+      throw new Error(`NetworkBridge saat ini hanya mendukung GET. Request POST ke ${url} gagal.`);
+    }
+  }
+
+  // Fallback ke fetch bawaan Node.js / Browser
+  if (typeof fetch === 'undefined') {
+    throw new Error('fetch atau NetworkBridge tidak ditemukan di JS Engine!');
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 

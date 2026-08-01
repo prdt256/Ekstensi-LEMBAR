@@ -203,7 +203,7 @@ async function main() {
   // Generate index
   if (!skipIndex && successManifests.length > 0) {
     console.log('');
-    const baseUrl = process.env.DIST_BASE_URL || '';
+    const baseUrl = process.env.DIST_BASE_URL || 'https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main';
     await generateIndex(successManifests, baseUrl);
   }
 

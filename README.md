@@ -182,25 +182,60 @@ Jika ingin menyertakan ekstensi secara langsung saat aplikasi dibuild:
    `app/src/main/assets/extensions/`
 2. Aplikasi dapat membaca `index.json` lokal secara offline.
 
-### 3. Cara Meng-eksekusi di Android Engine (JavaScript Engine)
-Aplikasi Android (QuickJS / Duktape / WebView JS Engine) cukup mengeksekusi file `.js` ekstensi, lalu memanggil fungsi global yang di-export:
+### 3. Cara Meng-eksekusi di Android (Integrasi QuickJS)
 
-- Setiap file `.js` di folder `dist` dibungkus dalam format IIFE dengan variabel global bernama `LembarExt_<source_id_di-snake_case>`.
-- **Contoh untuk `komikindo.js`**:
+Aplikasi **Lembar** menggunakan `QuickJs` dari CashApp. Karena JS Engine tidak punya fungsi `fetch` bawaan untuk mengambil HTML internet, ekstensi ini dirancang agar **otomatis mendeteksi `NetworkBridge`** dari Android!
 
-```javascript
-// 1. Load / Evaluasi script komikindo.js di JS Engine Android
-// Variabel global `LembarExt_komikindo` akan otomatis tersedia
+Anda harus menambahkan *bridge* jaringan pada `QuickJSEngine.kt` di aplikasi **Lembar** dengan kode Kotlin berikut:
 
-// 2. Mengambil Komik Populer
-const popularList = await LembarExt_komikindo.source.getPopular(1);
+```kotlin
+// Tambahkan Interface ini di QuickJSEngine.kt
+interface NetworkBridge {
+    fun get(url: String): String
+}
 
-// 3. Mengambil Detail Komik
-const detail = await LembarExt_komikindo.source.getDetail('/komik/one-piece/');
-
-// 4. Mengambil Gambar Chapter
-const pages = await LembarExt_komikindo.source.getPageList('/one-piece-chapter-1000/');
+// Saat inisialisasi QuickJS (di fungsi init()), inject jembatan jaringannya:
+fun init() {
+    if (quickJs == null) {
+        quickJs = QuickJs.create()
+        // Hubungkan HttpClient Android ke JavaScript
+        quickJs?.set("NetworkBridge", NetworkBridge::class.java, object : NetworkBridge {
+            override fun get(url: String): String {
+                // Memanggil HttpClient Kotlin yang sudah ada di com.lembar.app.network
+                return com.lembar.app.network.HttpClient.get(url)
+            }
+        })
+    }
+}
 ```
+
+### 4. Contoh Memanggil Fungsi Ekstensi dari Kotlin
+
+Setelah `NetworkBridge` di-set, Android tinggal mengeksekusi script `.js` dan memanggil fungsinya. Karena fungsi ekstensi menggunakan `async`, kita bisa menggunakan trik Promise resolver atau langsung `JSON.stringify` di JS.
+
+**Contoh pengambilan data populer dari Kotlin:**
+```kotlin
+// 1. Baca kode dari internal storage (lewat ExtensionManager.kt)
+val jsCode = extensionManager.getExtensionCode("komikindo.js")
+quickJs.evaluate(jsCode)
+
+// 2. Karena JS-nya Async, jalankan fungsi via evaluate dan tunggu string JSON-nya
+val jsonResult = quickJs.evaluate("""
+    // Karena evaluate QuickJS synchronous, eksekusi async butuh wrapper
+    var result = null;
+    LembarExt_komikindo.source.getPopular(1).then(res => {
+        result = JSON.stringify(res);
+    }).catch(err => {
+        result = JSON.stringify({ error: err.message });
+    });
+    // Jika QuickJS tidak auto-resolve, Anda butuh implementasi Promise Bridge
+    // atau gunakan script sinkron (blocking) sederhana.
+    result;
+""")
+
+println("Hasil Populer: ${jsonResult}")
+```
+
 
 
 ---
