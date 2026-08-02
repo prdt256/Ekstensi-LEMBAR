@@ -5,7 +5,7 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.0.8',
+  version: '1.0.9',
   lang: 'id',
   icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
@@ -80,7 +80,7 @@ async function getPopular(page = 1) {
     
     const $ = parseHtml(html);
     const allManga = parseMangaElements($);
-    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
+    const hasNextPage = /class="[^"]*next[^"]*"/.test(html) || /class="[^"]*r[^"]*"/.test(html) || $('.next').length > 0;
 
     return { manga: allManga, hasNextPage };
   } catch (err) {
@@ -99,7 +99,7 @@ async function getLatest(page = 1) {
     
     const $ = parseHtml(html);
     const allManga = parseMangaElements($);
-    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
+    const hasNextPage = /class="[^"]*next[^"]*"/.test(html) || /class="[^"]*r[^"]*"/.test(html) || $('.next').length > 0;
 
     return { manga: allManga, hasNextPage };
   } catch (err) {
@@ -118,7 +118,7 @@ async function search(query, page = 1) {
     
     const $ = parseHtml(html);
     const allManga = parseMangaElements($);
-    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
+    const hasNextPage = /class="[^"]*next[^"]*"/.test(html) || /class="[^"]*r[^"]*"/.test(html) || $('.next').length > 0;
 
     return { manga: allManga, hasNextPage };
   } catch (err) {

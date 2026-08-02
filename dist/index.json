@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-02T07:25:34.548Z",
+  "generated_at": "2026-08-02T07:27:22.985Z",
   "extensions": [
     {
       "id": "ezmanga",
@@ -15,7 +15,7 @@
     {
       "id": "komikindo",
       "name": "KomikIndo",
-      "version": "1.0.8",
+      "version": "1.0.9",
       "lang": "id",
       "icon": "https://komikindo.ch/wp-content/uploads/2020/12/fav.png",
       "nsfw": false,
