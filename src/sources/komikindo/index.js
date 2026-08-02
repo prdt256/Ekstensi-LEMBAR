@@ -5,7 +5,7 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.0.2',
+  version: '1.0.3',
   lang: 'id',
   icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
@@ -70,42 +70,54 @@ function parseMangaElements($) {
 }
 
 async function getPopular(page = 1) {
-  const url = page === 1 
-    ? buildUrl('/komik/?order=popular')
-    : buildUrl(`/komik/page/${page}/?order=popular`);
-    
-  const html = await getText(url);
-  const $ = parseHtml(html);
+  try {
+    const url = page === 1 
+      ? buildUrl('/komik/')
+      : buildUrl(`/komik/page/${page}/`);
+      
+    const html = await getText(url);
+    const $ = parseHtml(html);
 
-  const manga = parseMangaElements($);
-  const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
-  return { manga, hasNextPage };
+    const manga = parseMangaElements($);
+    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
+    return { manga, hasNextPage };
+  } catch (err) {
+    return { manga: [], hasNextPage: false };
+  }
 }
 
 async function getLatest(page = 1) {
-  const url = page === 1 
-    ? buildUrl('/komik/?order=update')
-    : buildUrl(`/komik/page/${page}/?order=update`);
-    
-  const html = await getText(url);
-  const $ = parseHtml(html);
+  try {
+    const url = page === 1 
+      ? buildUrl('/komik-terbaru/')
+      : buildUrl(`/komik-terbaru/page/${page}/`);
+      
+    const html = await getText(url);
+    const $ = parseHtml(html);
 
-  const manga = parseMangaElements($);
-  const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
-  return { manga, hasNextPage };
+    const manga = parseMangaElements($);
+    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
+    return { manga, hasNextPage };
+  } catch (err) {
+    return { manga: [], hasNextPage: false };
+  }
 }
 
 async function search(query, page = 1) {
-  const url = page === 1 
-    ? buildUrl(`/komik/?s=${encodeURIComponent(query)}`)
-    : buildUrl(`/komik/page/${page}/?s=${encodeURIComponent(query)}`);
+  try {
+    const url = page === 1 
+      ? buildUrl(`/komik/?s=${encodeURIComponent(query)}`)
+      : buildUrl(`/komik/page/${page}/?s=${encodeURIComponent(query)}`);
 
-  const html = await getText(url);
-  const $ = parseHtml(html);
+    const html = await getText(url);
+    const $ = parseHtml(html);
 
-  const manga = parseMangaElements($);
-  const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
-  return { manga, hasNextPage };
+    const manga = parseMangaElements($);
+    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
+    return { manga, hasNextPage };
+  } catch (err) {
+    return { manga: [], hasNextPage: false };
+  }
 }
 
 async function getDetail(mangaId) {
