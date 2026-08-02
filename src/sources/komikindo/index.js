@@ -119,13 +119,28 @@ async function getDetail(mangaId) {
 
   let statusText = '';
   let authors = [];
-  let artists = [];
   
+  const info = {};
+  
+  // Ambil judul alternatif jika ada
+  const altTitle = cleanText($('.komik_info-content-native').first());
+  if (altTitle && altTitle.toLowerCase() !== 'n/a') {
+    info['Judul Alternatif'] = altTitle;
+  }
+
   $('.komik_info-content-meta span').each((_, el) => {
     const text = cleanText($(el));
-    if (text.includes('Status:')) statusText = text.replace('Status:', '').trim().toLowerCase();
-    if (text.includes('Pengarang:')) authors = text.replace('Pengarang:', '').split(',').map(a => a.trim());
-    if (text.includes('Ilustrator:')) artists = text.replace('Ilustrator:', '').split(',').map(a => a.trim());
+    if (text.includes(':')) {
+      const parts = text.split(':');
+      const key = parts[0].trim();
+      const value = parts.slice(1).join(':').trim();
+      
+      if (key && value && value.toLowerCase() !== 'n/a' && value !== '-' && value !== '?') {
+        if (key === 'Status') statusText = value.toLowerCase();
+        if (key === 'Pengarang') authors = value.split(',').map(a => a.trim());
+        info[key] = value;
+      }
+    }
   });
 
   const statusMap = {
@@ -140,11 +155,11 @@ async function getDetail(mangaId) {
   );
 
   const chapters = [];
-  $('#chapter_list li, .clist li, .chapter-list li').each((_, el) => {
+  $('#chapter_list li, .clist li, .chapter-list li, .eps_lst li').each((_, el) => {
     const element = $(el);
     const linkEl = element.find('a').first();
     if (!linkEl.length) return;
-    const dateText = element.find('.dt, .chapterdate').text().trim();
+    const dateText = element.find('.dt, .chapterdate, .chapter-date').text().trim();
 
     chapters.push({
       id: extractHref(linkEl, metadata.baseUrl),
@@ -161,8 +176,8 @@ async function getDetail(mangaId) {
     status,
     genres,
     authors,
-    artists,
     chapters,
+    info,
   };
 }
 

@@ -139,6 +139,16 @@ async function getDetail(mangaId) {
       chapters.push({ id: mangaId + '/dummy', name: 'Tidak ada chapter' });
     }
 
+    const info = {};
+    if (detailData.alternative) info['Alternatif'] = detailData.alternative;
+    if (detailData.type) info['Tipe'] = detailData.type;
+    if (detailData.release) info['Rilis'] = detailData.release;
+    if (detailData.serialization) info['Serialisasi'] = detailData.serialization;
+    if (detailData.artist) info['Ilustrator'] = detailData.artist;
+    if (detailData.updatedAt) {
+      info['Diperbarui'] = new Date(detailData.updatedAt).toLocaleDateString('id-ID');
+    }
+
     return {
       id: mangaId,
       title,
@@ -148,6 +158,7 @@ async function getDetail(mangaId) {
       genres,
       authors,
       chapters,
+      info,
     };
   } catch (err) {
     return {
