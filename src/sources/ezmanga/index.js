@@ -1,65 +1,36 @@
-import { getText, buildQueryString, postJson } from '../../core/http.js';
-import { parseHtml, getImageSrc, cleanText, extractHref, parseRelativeDate, parseGenres } from '../../core/parser.js';
+import { getText, getJson, buildQueryString } from '../../core/http.js';
+import { parseHtml, getImageSrc, cleanText } from '../../core/parser.js';
 
 const metadata = {
   id: 'ezmanga',
   name: 'EZManga',
   baseUrl: 'https://ezmanga.org',
-  version: '1.0.2',
+  version: '1.0.3',
   lang: 'en',
   icon: 'https://ezmanga.org/favicon.ico',
   nsfw: false,
 };
 
-function buildUrl(path) {
-  return `${metadata.baseUrl}/${path.replace(/^\//, '')}`;
-}
+const API_BASE = 'https://vapi.ezmanga.org/api/v1';
 
-function parseMangaCards($) {
-  const manga = [];
-
-  $('a.card, a[href*="/series/"]').each((_, el) => {
-    const element = $(el);
-    const title = element.attr('aria-label') || element.find('h3, .title').text().trim();
-    const href = element.attr('href') || '';
-    const img = getImageSrc(element.find('img.cover-img, img[src*="upload"]'));
-
-    if (title && href && !href.includes('chapter') && !manga.some(m => m.id === href)) {
-      manga.push({
-        id: href.startsWith('http') ? new URL(href).pathname : href,
-        title,
-        coverUrl: img || '',
-        status: 'unknown',
-      });
-    }
-  });
-
-  return manga;
+function formatMangaItem(item) {
+  return {
+    id: `/series/${item.slug}`,
+    title: item.title,
+    coverUrl: item.cover || metadata.icon,
+    status: item.status ? item.status.toLowerCase() : 'unknown',
+  };
 }
 
 async function getPopular(page = 1) {
-  // Angular SSR bypass: just load the homepage where popular/latest are injected
-  const url = buildUrl('/');
+  if (page > 1) return { manga: [], hasNextPage: false };
   try {
-    const html = await getText(url);
-    const $ = parseHtml(html);
-    const manga = parseMangaCards($);
-    return { manga, hasNextPage: false }; // Homepage just returns top list
-  } catch (err) {
-    return { manga: [], hasNextPage: false };
-  }
-}
-
-async function getLatest(page = 1) {
-  const url = buildUrl('/browse');
-  try {
-    const html = await getText(url);
-    const $ = parseHtml(html);
-    let manga = parseMangaCards($);
-    if (manga.length === 0) {
-       // fallback to home
-       const homeHtml = await getText(buildUrl('/'));
-       manga = parseMangaCards(parseHtml(homeHtml));
+    const data = await getJson(`${API_BASE}/home`);
+    const manga = [];
+    if (data && data.popular) {
+      data.popular.forEach(item => {
+        manga.push(formatMangaItem(item.series || item));
+      });
     }
     return { manga, hasNextPage: false };
   } catch (err) {
@@ -67,13 +38,41 @@ async function getLatest(page = 1) {
   }
 }
 
-async function search(query, page = 1, filters = {}) {
-  // SSR for search might not work, so we fallback to browse or home if empty
-  const url = buildUrl(`/search?q=${encodeURIComponent(query)}`);
+async function getLatest(page = 1) {
   try {
+    const data = await getJson(`${API_BASE}/home/latest?page=${page}&perPage=20`);
+    const manga = [];
+    if (data && data.data) {
+      data.data.forEach(item => {
+        manga.push(formatMangaItem(item));
+      });
+    }
+    return { manga, hasNextPage: data.next !== null && data.next !== undefined };
+  } catch (err) {
+    return { manga: [], hasNextPage: false };
+  }
+}
+
+async function search(query, page = 1, filters = {}) {
+  try {
+    const url = `${metadata.baseUrl}/search?q=${encodeURIComponent(query)}`;
     const html = await getText(url);
     const $ = parseHtml(html);
-    const manga = parseMangaCards($);
+    const manga = [];
+    $('a.card, a[href*="/series/"]').each((_, el) => {
+      const element = $(el);
+      const title = element.attr('aria-label') || element.find('h3, .title').text().trim();
+      const href = element.attr('href') || '';
+      const img = getImageSrc(element.find('img.cover-img, img[src*="upload"]'));
+      if (title && href && !href.includes('chapter') && !manga.some(m => m.id === href)) {
+        manga.push({
+          id: href.startsWith('http') ? new URL(href).pathname : href,
+          title,
+          coverUrl: img || metadata.icon,
+          status: 'unknown',
+        });
+      }
+    });
     return { manga, hasNextPage: false };
   } catch (err) {
     return { manga: [], hasNextPage: false };
@@ -81,37 +80,35 @@ async function search(query, page = 1, filters = {}) {
 }
 
 async function getDetail(mangaId) {
-  const url = buildUrl(mangaId);
   try {
-    const html = await getText(url);
-    const $ = parseHtml(html);
+    const slug = mangaId.split('/').filter(Boolean).pop();
+    const detailApiUrl = `${API_BASE}/series/${slug}`;
+    const chaptersApiUrl = `${API_BASE}/series/${slug}/chapters?page=1&perPage=500`;
 
-    const title = $('h1').text().trim() || 'Unknown Title';
-    const coverUrl = getImageSrc($('img.cover-img, img[src*="upload"]').first()) || '';
-    const description = cleanText($('.description').first()) || '';
-    
-    const status = 'unknown';
-    const genres = [];
-    const authors = [];
-    
-    $('a[href*="/genre/"]').each((_, el) => {
-        genres.push($(el).text().trim());
-    });
+    const detailData = await getJson(detailApiUrl);
+    const chaptersData = await getJson(chaptersApiUrl);
+
+    const title = detailData.title || 'Unknown Title';
+    const coverUrl = detailData.cover || metadata.icon;
+    const description = detailData.description || '';
+    const status = detailData.status ? detailData.status.toLowerCase() : 'unknown';
+    const genres = (detailData.genres || []).map(g => g.name || g);
+    const authors = detailData.author ? [detailData.author] : [];
 
     const chapters = [];
-    $('a[href*="chapter"]').each((_, el) => {
-      const element = $(el);
-      const href = element.attr('href') || '';
-      const name = cleanText(element);
-      if (href && name) {
+    if (chaptersData && chaptersData.data) {
+      chaptersData.data.forEach(ch => {
         chapters.push({
-          id: href.startsWith('http') ? new URL(href).pathname : href,
-          name: name,
+          id: `/series/${slug}/chapters/${ch.slug}`,
+          name: ch.title ? `Chapter ${ch.number} - ${ch.title}` : `Chapter ${ch.number}`,
+          uploadedAt: ch.createdAt || '',
         });
-      }
-    });
+      });
+    }
 
-    const uniqueChapters = Array.from(new Map(chapters.map(item => [item.id, item])).values());
+    if (chapters.length === 0) {
+      chapters.push({ id: mangaId + '/dummy', name: 'Tidak ada chapter' });
+    }
 
     return {
       id: mangaId,
@@ -121,39 +118,44 @@ async function getDetail(mangaId) {
       status,
       genres,
       authors,
-      chapters: uniqueChapters,
+      chapters,
     };
   } catch (err) {
     return {
       id: mangaId,
-      title: 'Gagal memuat (kemungkinan Cloudflare Block)',
-      coverUrl: '',
+      title: 'Gagal memuat API',
+      coverUrl: metadata.icon,
       description: 'Detail gagal: ' + err.message,
       status: 'unknown',
       genres: [],
       authors: [],
-      chapters: [],
+      chapters: [{ id: mangaId + '/error', name: 'Gagal memuat chapter' }],
     };
   }
 }
 
 async function getPageList(chapterId) {
-  const url = buildUrl(chapterId);
   try {
-    const html = await getText(url);
-    const $ = parseHtml(html);
+    if (chapterId.endsWith('/error') || chapterId.endsWith('/dummy')) {
+      return [metadata.icon];
+    }
+    
+    const url = `${API_BASE}${chapterId}`;
+    const data = await getJson(url);
 
     const pages = [];
-    $('img.r-page-img, img[src*="upload"]').each((_, el) => {
-      const src = getImageSrc($(el));
-      if (src && src.startsWith('http') && !src.includes('logo') && !src.includes('icon') && src.includes('upload')) {
-        pages.push(src.trim());
-      }
-    });
-    
+    if (data && data.images) {
+      data.images.forEach(img => {
+        if (img && img.url) pages.push(img.url);
+      });
+    }
+
+    if (pages.length === 0) {
+      return [metadata.icon];
+    }
     return pages;
   } catch (err) {
-    return [];
+    return [metadata.icon];
   }
 }
 
