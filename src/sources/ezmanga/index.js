@@ -83,10 +83,8 @@ async function getDetail(mangaId) {
   try {
     const slug = mangaId.split('/').filter(Boolean).pop();
     const detailApiUrl = `${API_BASE}/series/${slug}`;
-    const chaptersApiUrl = `${API_BASE}/series/${slug}/chapters?page=1&perPage=500`;
 
     const detailData = await getJson(detailApiUrl);
-    const chaptersData = await getJson(chaptersApiUrl);
 
     const title = detailData.title || 'Unknown Title';
     const coverUrl = detailData.cover || metadata.icon;
@@ -96,14 +94,32 @@ async function getDetail(mangaId) {
     const authors = detailData.author ? [detailData.author] : [];
 
     const chapters = [];
-    if (chaptersData && chaptersData.data) {
-      chaptersData.data.forEach(ch => {
-        chapters.push({
-          id: `/series/${slug}/chapters/${ch.slug}`,
-          name: ch.title ? `Chapter ${ch.number} - ${ch.title}` : `Chapter ${ch.number}`,
-          uploadedAt: ch.createdAt || '',
-        });
-      });
+    let page = 1;
+    let hasNext = true;
+
+    while (hasNext) {
+      const chaptersApiUrl = `${API_BASE}/series/${slug}/chapters?page=${page}&perPage=100`;
+      try {
+        const chaptersData = await getJson(chaptersApiUrl);
+        if (chaptersData && chaptersData.data) {
+          chaptersData.data.forEach(ch => {
+            chapters.push({
+              id: `/series/${slug}/chapters/${ch.slug}`,
+              name: ch.title ? `Chapter ${ch.number} - ${ch.title}` : `Chapter ${ch.number}`,
+              uploadedAt: ch.createdAt || '',
+            });
+          });
+          if (chaptersData.current >= chaptersData.totalPages || !chaptersData.next) {
+            hasNext = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasNext = false;
+        }
+      } catch (err) {
+        hasNext = false; // Stop fetching on error
+      }
     }
 
     if (chapters.length === 0) {
