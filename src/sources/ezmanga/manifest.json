@@ -2,10 +2,10 @@
   "id": "ezmanga",
   "name": "EZManga",
   "baseUrl": "https://ezmanga.org",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "lang": "en",
   "icon": "https://ezmanga.org/favicon.ico",
   "nsfw": false,
   "active": true,
-  "description": "Ekstensi sumber komik untuk EZManga."
+  "description": "Ekstensi sumber komik untuk EzManga."
 }

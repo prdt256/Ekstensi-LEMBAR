@@ -5,7 +5,7 @@ const metadata = {
   id: 'ezmanga',
   name: 'EZManga',
   baseUrl: 'https://ezmanga.org',
-  version: '1.0.3',
+  version: '1.0.4',
   lang: 'en',
   icon: 'https://ezmanga.org/favicon.ico',
   nsfw: false,
@@ -13,38 +13,62 @@ const metadata = {
 
 const API_BASE = 'https://vapi.ezmanga.org/api/v1';
 
-function formatMangaItem(item) {
-  return {
-    id: `/series/${item.slug}`,
-    title: item.title,
-    coverUrl: item.cover || metadata.icon,
-    status: item.status ? item.status.toLowerCase() : 'unknown',
-  };
+function parseMangaElements($) {
+  const manga = [];
+  $('a.card, a[href*="/series/"]').each((_, el) => {
+    const element = $(el);
+    const title = element.attr('aria-label') || element.find('h3, .title').text().trim();
+    const href = element.attr('href') || '';
+    const img = getImageSrc(element.find('img.cover-img, img[src*="upload"]'));
+    if (title && href && !href.includes('chapter') && !manga.some(m => m.id === href)) {
+      manga.push({
+        id: href.startsWith('http') ? new URL(href).pathname : href,
+        title,
+        coverUrl: img || metadata.icon,
+        status: 'unknown',
+      });
+    }
+  });
+  return manga;
+}
+
+async function fetchBatch(buildPageUrl, page = 1) {
+  const initialCount = 10;
+  const fetchCount = page === 1 ? initialCount : 2;
+  const startPage = page === 1 ? 1 : initialCount + (page - 2) * 2 + 1;
+  
+  let allManga = [];
+  let hasNextPage = false;
+
+  for (let i = startPage; i < startPage + fetchCount; i++) {
+    const url = buildPageUrl(i);
+    try {
+      const html = await getText(url);
+      if (html) {
+        const $ = parseHtml(html);
+        allManga = allManga.concat(parseMangaElements($));
+        if (html.includes('aria-label="Next page"') || html.includes('aria-label="Next"')) {
+          hasNextPage = true;
+        } else if (allManga.length > 0) {
+          hasNextPage = true; // Fallback
+        }
+      }
+    } catch (e) {
+      // Ignore single page error
+    }
+  }
+
+  // Hilangkan duplikat jika ada
+  allManga = allManga.filter((m, index, self) => 
+    index === self.findIndex((t) => t.id === m.id)
+  );
+
+  return { manga: allManga, hasNextPage };
 }
 
 async function getPopular(page = 1) {
-  if (page > 1) return { manga: [], hasNextPage: false };
   try {
-    const data = await getJson(`${API_BASE}/home`);
-    const manga = [];
-    const collections = ['pinned', 'editorsPick', 'popular', 'newSeries'];
-    const addedIds = new Set();
-
-    if (data) {
-      collections.forEach(key => {
-        if (data[key]) {
-          data[key].forEach(item => {
-            const series = item.series || item;
-            const formatted = formatMangaItem(series);
-            if (!addedIds.has(formatted.id)) {
-              manga.push(formatted);
-              addedIds.add(formatted.id);
-            }
-          });
-        }
-      });
-    }
-    return { manga, hasNextPage: false };
+    return await fetchBatch((p) => `${metadata.baseUrl}/browse?page=${p}&sort=popular`, page);
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }
@@ -52,14 +76,7 @@ async function getPopular(page = 1) {
 
 async function getLatest(page = 1) {
   try {
-    const data = await getJson(`${API_BASE}/home/latest?page=${page}&perPage=20`);
-    const manga = [];
-    if (data && data.data) {
-      data.data.forEach(item => {
-        manga.push(formatMangaItem(item));
-      });
-    }
-    return { manga, hasNextPage: data.next !== null && data.next !== undefined };
+    return await fetchBatch((p) => `${metadata.baseUrl}/browse?page=${p}&sort=latest`, page);
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }
@@ -67,25 +84,7 @@ async function getLatest(page = 1) {
 
 async function search(query, page = 1, filters = {}) {
   try {
-    const url = `${metadata.baseUrl}/search?q=${encodeURIComponent(query)}`;
-    const html = await getText(url);
-    const $ = parseHtml(html);
-    const manga = [];
-    $('a.card, a[href*="/series/"]').each((_, el) => {
-      const element = $(el);
-      const title = element.attr('aria-label') || element.find('h3, .title').text().trim();
-      const href = element.attr('href') || '';
-      const img = getImageSrc(element.find('img.cover-img, img[src*="upload"]'));
-      if (title && href && !href.includes('chapter') && !manga.some(m => m.id === href)) {
-        manga.push({
-          id: href.startsWith('http') ? new URL(href).pathname : href,
-          title,
-          coverUrl: img || metadata.icon,
-          status: 'unknown',
-        });
-      }
-    });
-    return { manga, hasNextPage: false };
+    return await fetchBatch((p) => `${metadata.baseUrl}/search?q=${encodeURIComponent(query)}&page=${p}`, page);
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }
