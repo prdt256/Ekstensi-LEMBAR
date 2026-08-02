@@ -70,8 +70,9 @@ function parseMangaElements($) {
 }
 
 async function fetchBatch(buildPageUrl, page = 1) {
-  const fetchCount = page === 1 ? 10 : 2;
-  const startPage = page === 1 ? 1 : 5 + (page - 2) * 2 + 1;
+  const initialCount = 10;
+  const fetchCount = page === 1 ? initialCount : 2;
+  const startPage = page === 1 ? 1 : initialCount + (page - 2) * 2 + 1;
   
   let allManga = [];
   let hasNextPage = false;
