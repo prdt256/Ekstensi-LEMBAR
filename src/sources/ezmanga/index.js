@@ -5,7 +5,7 @@ const metadata = {
   id: 'ezmanga',
   name: 'EZManga',
   baseUrl: 'https://ezmanga.org',
-  version: '1.0.0',
+  version: '1.0.1',
   lang: 'en',
   icon: 'https://ezmanga.org/favicon.ico',
   nsfw: false,
@@ -15,66 +15,124 @@ function buildUrl(path) {
   return `${metadata.baseUrl}/${path.replace(/^\//, '')}`;
 }
 
-async function getPopular(page = 1) {
-  // EZManga uses an Angular SSR or similar structure. 
-  // We'll use a best-effort selector based on home page analysis.
-  const url = buildUrl(`/?page=${page}`);
-  const html = await getText(url);
-  const $ = parseHtml(html);
+/**
+ * EZManga menggunakan WordPress theme Madara.
+ * Selector kunci Madara:
+ *  - Cover: .post-title, h1
+ *  - Chapter list: li.wp-manga-chapter a
+ *  - Halaman baca: .reading-content img, .page-break img
+ *  - Info: .post-content_item .summary-content
+ *  - Genre: .genres-content a
+ *  - Status: .post-content_item:contains("Status") .summary-content
+ */
 
+function parseMangaCards($) {
   const manga = [];
-  $('a[href*="/series/"]').each((_, el) => {
-    const element = $(el);
-    const title = element.attr('aria-label') || element.attr('title') || cleanText(element);
-    const href = element.attr('href');
-    
-    // Attempt to find image inside the link or parent
-    const img = getImageSrc(element.find('img')) || getImageSrc(element.parent().find('img'));
 
-    // Avoid duplicates
-    if (title && href && !manga.some(m => m.id === href)) {
-      manga.push({
-        id: href.startsWith('http') ? new URL(href).pathname : href,
-        title: title,
-        coverUrl: img || 'https://via.placeholder.com/150',
-        status: 'unknown',
-      });
+  // Madara card selectors: .page-item-detail, .manga, .bsx, animepost fallback
+  const selectors = [
+    '.page-item-detail',
+    '.manga__item',
+    '.c-tabs-item__content',
+    '.post-title a',
+    'a[href*="/manga/"]'
+  ];
+
+  // Coba selector card terlebih dahulu
+  let cardElements = $();
+  for (const sel of ['.page-item-detail', '.manga__item', '.c-tabs-item__content']) {
+    const found = $(sel);
+    if (found.length > 0) {
+      cardElements = found;
+      break;
     }
-  });
+  }
 
-  return { manga, hasNextPage: false };
-}
-
-async function getLatest(page = 1) {
-  return getPopular(page); // Fallback for EZManga
-}
-
-async function search(query, page = 1, filters = {}) {
-  const url = buildUrl(`/search?q=${encodeURIComponent(query)}&page=${page}`);
-  try {
-    const html = await getText(url);
-    const $ = parseHtml(html);
-
-    const manga = [];
-    $('a[href*="/series/"]').each((_, el) => {
+  if (cardElements.length > 0) {
+    cardElements.each((_, el) => {
       const element = $(el);
-      const title = element.attr('aria-label') || element.attr('title') || cleanText(element);
-      const href = element.attr('href');
-      const img = getImageSrc(element.find('img'));
+      const linkEl = element.find('.post-title a, h3 a, h5 a, a[href*="/manga/"]').first();
+      if (!linkEl.length) return;
 
-      if (title && href && !manga.some(m => m.id === href)) {
+      const title = linkEl.text().trim();
+      const href = linkEl.attr('href') || '';
+      const img = getImageSrc(element.find('img').first());
+
+      if (title && href && !manga.some(m => m.title === title)) {
         manga.push({
           id: href.startsWith('http') ? new URL(href).pathname : href,
-          title: title,
-          coverUrl: img || 'https://via.placeholder.com/150',
+          title,
+          coverUrl: img || '',
           status: 'unknown',
         });
       }
     });
+  } else {
+    // Fallback: cari semua link manga
+    $('a[href*="/manga/"]').each((_, el) => {
+      const element = $(el);
+      const href = element.attr('href') || '';
+      const title = element.attr('title') || element.text().trim();
+      const img = getImageSrc(element.find('img')) || getImageSrc(element.parent().find('img'));
 
-    return { manga, hasNextPage: false };
+      if (title && href && title.length > 2 && !manga.some(m => m.id === href)) {
+        manga.push({
+          id: href.startsWith('http') ? new URL(href).pathname : href,
+          title,
+          coverUrl: img || '',
+          status: 'unknown',
+        });
+      }
+    });
+  }
+
+  return manga;
+}
+
+async function getPopular(page = 1) {
+  const url = page === 1
+    ? buildUrl('/manga/?m_orderby=views')
+    : buildUrl(`/manga/page/${page}/?m_orderby=views`);
+
+  try {
+    const html = await getText(url);
+    const $ = parseHtml(html);
+    const manga = parseMangaCards($);
+    const hasNextPage = $('.wp-pagenavi .nextpostslink, .nav-previous a, a.next').length > 0;
+    return { manga, hasNextPage };
   } catch (err) {
-    // Cloudflare blocks or no search page
+    return { manga: [], hasNextPage: false };
+  }
+}
+
+async function getLatest(page = 1) {
+  const url = page === 1
+    ? buildUrl('/manga/?m_orderby=latest')
+    : buildUrl(`/manga/page/${page}/?m_orderby=latest`);
+
+  try {
+    const html = await getText(url);
+    const $ = parseHtml(html);
+    const manga = parseMangaCards($);
+    const hasNextPage = $('.wp-pagenavi .nextpostslink, .nav-previous a, a.next').length > 0;
+    return { manga, hasNextPage };
+  } catch (err) {
+    return { manga: [], hasNextPage: false };
+  }
+}
+
+async function search(query, page = 1, filters = {}) {
+  const url = page === 1
+    ? buildUrl(`/?s=${encodeURIComponent(query)}&post_type=wp-manga`)
+    : buildUrl(`/page/${page}/?s=${encodeURIComponent(query)}&post_type=wp-manga`);
+
+  try {
+    const html = await getText(url);
+    const $ = parseHtml(html);
+    const manga = parseMangaCards($);
+    const hasNextPage = $('.wp-pagenavi .nextpostslink, .nav-previous a, a.next').length > 0;
+    return { manga, hasNextPage };
+  } catch (err) {
     return { manga: [], hasNextPage: false };
   }
 }
@@ -85,18 +143,55 @@ async function getDetail(mangaId) {
     const html = await getText(url);
     const $ = parseHtml(html);
 
-    // Standard generic selectors
-    const title = cleanText($('h1')) || cleanText($('h2'));
-    const description = cleanText($('.summary, .description, p').first());
-    const coverUrl = getImageSrc($('img').first()) || 'https://via.placeholder.com/150';
-    
+    // Madara: judul ada di .post-title h1 atau h1
+    const title = cleanText($('.post-title h1').first())
+      || cleanText($('.post-title').first())
+      || cleanText($('h1').first());
+
+    // Cover
+    const coverUrl = getImageSrc($('.summary_image img').first())
+      || getImageSrc($('.tab-summary img').first())
+      || getImageSrc($('img').first())
+      || '';
+
+    // Deskripsi
+    const description = cleanText($('.summary__content, .description-summary .summary__content, .manga-excerpt').first())
+      || cleanText($('.entry-content').first())
+      || '';
+
+    // Metadata
+    let status = 'unknown';
+    let authors = [];
+    let genres = [];
+
+    $('.post-content_item').each((_, el) => {
+      const label = cleanText($(el).find('.summary-heading').first()).toLowerCase();
+      const value = cleanText($(el).find('.summary-content').first());
+
+      if (label.includes('status')) status = value.toLowerCase();
+      if (label.includes('author') || label.includes('artist')) {
+        authors = value.split(',').map(a => a.trim()).filter(Boolean);
+      }
+    });
+
+    genres = parseGenres(
+      $('.genres-content a, .tags-content a').map((_, el) => $(el).text()).get()
+    );
+
+    // Chapters — Madara standar: li.wp-manga-chapter
     const chapters = [];
-    $('a[href*="/chapter/"]').each((_, el) => {
+    $('li.wp-manga-chapter, .listing-chapters_wrap li').each((_, el) => {
       const element = $(el);
+      const linkEl = element.find('a').first();
+      if (!linkEl.length) return;
+
+      const dateText = element.find('.chapter-release-date, .release-date, i').text().trim();
       chapters.push({
-        id: element.attr('href').startsWith('http') ? new URL(element.attr('href')).pathname : element.attr('href'),
-        name: cleanText(element),
-        uploadedAt: new Date().toISOString(),
+        id: (linkEl.attr('href') || '').startsWith('http')
+          ? new URL(linkEl.attr('href')).pathname
+          : (linkEl.attr('href') || ''),
+        name: cleanText(linkEl),
+        uploadedAt: dateText ? parseRelativeDate(dateText).toISOString() : '',
       });
     });
 
@@ -105,15 +200,20 @@ async function getDetail(mangaId) {
       title: title || 'Unknown Title',
       coverUrl,
       description,
-      status: 'unknown',
+      status,
+      genres,
+      authors,
       chapters,
     };
   } catch (err) {
     return {
       id: mangaId,
-      title: 'Failed to load (Cloudflare Block)',
-      coverUrl: 'https://via.placeholder.com/150',
-      description: 'Detail failed: ' + err.message,
+      title: 'Gagal memuat (kemungkinan Cloudflare Block)',
+      coverUrl: '',
+      description: 'Detail gagal: ' + err.message,
+      status: 'unknown',
+      genres: [],
+      authors: [],
       chapters: [],
     };
   }
@@ -126,11 +226,11 @@ async function getPageList(chapterId) {
     const $ = parseHtml(html);
 
     const pages = [];
-    $('img').each((_, el) => {
+    // Madara chapter reader: .reading-content img, .page-break img
+    $('.reading-content img, .page-break img, #readerarea img').each((_, el) => {
       const src = getImageSrc($(el));
-      // Ignore tiny icons or logos
       if (src && src.startsWith('http') && !src.includes('logo') && !src.includes('icon')) {
-        pages.push(src);
+        pages.push(src.trim());
       }
     });
 
