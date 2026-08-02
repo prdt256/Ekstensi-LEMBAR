@@ -27,9 +27,21 @@ async function getPopular(page = 1) {
   try {
     const data = await getJson(`${API_BASE}/home`);
     const manga = [];
-    if (data && data.popular) {
-      data.popular.forEach(item => {
-        manga.push(formatMangaItem(item.series || item));
+    const collections = ['pinned', 'editorsPick', 'popular', 'newSeries'];
+    const addedIds = new Set();
+
+    if (data) {
+      collections.forEach(key => {
+        if (data[key]) {
+          data[key].forEach(item => {
+            const series = item.series || item;
+            const formatted = formatMangaItem(series);
+            if (!addedIds.has(formatted.id)) {
+              manga.push(formatted);
+              addedIds.add(formatted.id);
+            }
+          });
+        }
       });
     }
     return { manga, hasNextPage: false };
@@ -88,7 +100,8 @@ async function getDetail(mangaId) {
 
     const title = detailData.title || 'Unknown Title';
     const coverUrl = detailData.cover || metadata.icon;
-    const description = detailData.description || '';
+    let description = detailData.description || '';
+    description = description.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
     const status = detailData.status ? detailData.status.toLowerCase() : 'unknown';
     const genres = (detailData.genres || []).map(g => g.name || g);
     const authors = detailData.author ? [detailData.author] : [];
