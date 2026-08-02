@@ -5,7 +5,7 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.0.3',
+  version: '1.0.4',
   lang: 'id',
   icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
@@ -71,16 +71,36 @@ function parseMangaElements($) {
 
 async function getPopular(page = 1) {
   try {
-    const url = page === 1 
-      ? buildUrl('/komik/')
-      : buildUrl(`/komik/page/${page}/`);
-      
-    const html = await getText(url);
-    const $ = parseHtml(html);
+    const promises = [];
+    const limit = 3;
+    const startPage = (page - 1) * limit + 1;
+    
+    for (let i = startPage; i < startPage + limit; i++) {
+      const url = i === 1 
+        ? buildUrl('/komik/')
+        : buildUrl(`/komik/page/${i}/`);
+      promises.push(getText(url).catch(() => null));
+    }
+    
+    const htmls = await Promise.all(promises);
+    let allManga = [];
+    let hasNextPage = false;
+    
+    for (const html of htmls) {
+      if (!html) continue;
+      const $ = parseHtml(html);
+      allManga = allManga.concat(parseMangaElements($));
+      if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
+        hasNextPage = true;
+      }
+    }
+    
+    // Hilangkan duplikat jika ada
+    allManga = allManga.filter((m, index, self) => 
+      index === self.findIndex((t) => t.id === m.id)
+    );
 
-    const manga = parseMangaElements($);
-    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
-    return { manga, hasNextPage };
+    return { manga: allManga, hasNextPage };
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }
@@ -88,16 +108,35 @@ async function getPopular(page = 1) {
 
 async function getLatest(page = 1) {
   try {
-    const url = page === 1 
-      ? buildUrl('/komik-terbaru/')
-      : buildUrl(`/komik-terbaru/page/${page}/`);
-      
-    const html = await getText(url);
-    const $ = parseHtml(html);
+    const promises = [];
+    const limit = 3;
+    const startPage = (page - 1) * limit + 1;
+    
+    for (let i = startPage; i < startPage + limit; i++) {
+      const url = i === 1 
+        ? buildUrl('/komik-terbaru/')
+        : buildUrl(`/komik-terbaru/page/${i}/`);
+      promises.push(getText(url).catch(() => null));
+    }
+    
+    const htmls = await Promise.all(promises);
+    let allManga = [];
+    let hasNextPage = false;
+    
+    for (const html of htmls) {
+      if (!html) continue;
+      const $ = parseHtml(html);
+      allManga = allManga.concat(parseMangaElements($));
+      if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
+        hasNextPage = true;
+      }
+    }
+    
+    allManga = allManga.filter((m, index, self) => 
+      index === self.findIndex((t) => t.id === m.id)
+    );
 
-    const manga = parseMangaElements($);
-    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
-    return { manga, hasNextPage };
+    return { manga: allManga, hasNextPage };
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }
@@ -105,16 +144,35 @@ async function getLatest(page = 1) {
 
 async function search(query, page = 1) {
   try {
-    const url = page === 1 
-      ? buildUrl(`/komik/?s=${encodeURIComponent(query)}`)
-      : buildUrl(`/komik/page/${page}/?s=${encodeURIComponent(query)}`);
+    const promises = [];
+    const limit = 3;
+    const startPage = (page - 1) * limit + 1;
+    
+    for (let i = startPage; i < startPage + limit; i++) {
+      const url = i === 1 
+        ? buildUrl(`/komik/?s=${encodeURIComponent(query)}`)
+        : buildUrl(`/komik/page/${i}/?s=${encodeURIComponent(query)}`);
+      promises.push(getText(url).catch(() => null));
+    }
+    
+    const htmls = await Promise.all(promises);
+    let allManga = [];
+    let hasNextPage = false;
+    
+    for (const html of htmls) {
+      if (!html) continue;
+      const $ = parseHtml(html);
+      allManga = allManga.concat(parseMangaElements($));
+      if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
+        hasNextPage = true;
+      }
+    }
+    
+    allManga = allManga.filter((m, index, self) => 
+      index === self.findIndex((t) => t.id === m.id)
+    );
 
-    const html = await getText(url);
-    const $ = parseHtml(html);
-
-    const manga = parseMangaElements($);
-    const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
-    return { manga, hasNextPage };
+    return { manga: allManga, hasNextPage };
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }

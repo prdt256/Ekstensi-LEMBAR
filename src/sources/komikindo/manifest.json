@@ -2,7 +2,7 @@
   "id": "komikindo",
   "name": "KomikIndo",
   "baseUrl": "https://komikindo.ch",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "lang": "id",
   "icon": "https://komikindo.ch/wp-content/uploads/2020/12/fav.png",
   "nsfw": false,
