@@ -110,7 +110,15 @@ async function getDetail(mangaId) {
     title = title.substring(6).trim();
   }
   
-  const coverUrl = getImageSrc($('.komik_info-content-thumbnail img').first()) || getImageSrc($('.thumb img').first());
+  // Ambil semua potensi gambar
+  let coverUrl = '';
+  $('.komik_info-content-thumbnail img, .thumb img').each((_, el) => {
+    if (coverUrl) return; // sudah ketemu
+    const src = getImageSrc($(el));
+    if (src && !src.toLowerCase().includes('logo') && !src.toLowerCase().includes('icon')) {
+      coverUrl = src;
+    }
+  });
   
   let description = cleanText($('.komik_info-description .entry-content').first()) || cleanText($('.entry-content').first());
   if (description.startsWith('Sinopsis Manga')) {
@@ -130,6 +138,15 @@ async function getDetail(mangaId) {
 
   $('.komik_info-content-meta span').each((_, el) => {
     const text = cleanText($(el));
+    // Deteksi "Pengarang: Oda" atau "Pengarang : Oda" dll
+    const lowerText = text.toLowerCase();
+    if (lowerText.includes('pengarang') || lowerText.includes('author')) {
+      const match = text.match(/(?:Pengarang|Author)\s*:\s*(.+)/i);
+      if (match && match[1]) {
+        authors = match[1].split(',').map(a => a.trim());
+      }
+    }
+    
     if (text.includes(':')) {
       const parts = text.split(':');
       const key = parts[0].trim();
@@ -137,7 +154,6 @@ async function getDetail(mangaId) {
       
       if (key && value && value.toLowerCase() !== 'n/a' && value !== '-' && value !== '?') {
         if (key === 'Status') statusText = value.toLowerCase();
-        if (key === 'Pengarang') authors = value.split(',').map(a => a.trim());
         info[key] = value;
       }
     }
@@ -155,18 +171,40 @@ async function getDetail(mangaId) {
   );
 
   const chapters = [];
-  $('#chapter_list li, .clist li, .chapter-list li, .eps_lst li').each((_, el) => {
-    const element = $(el);
-    const linkEl = element.find('a').first();
-    if (!linkEl.length) return;
-    const dateText = element.find('.dt, .chapterdate, .chapter-date').text().trim();
-
-    chapters.push({
-      id: extractHref(linkEl, metadata.baseUrl),
-      name: cleanText(element.find('.lchx').first()) || cleanText(linkEl),
-      uploadedAt: dateText ? parseRelativeDate(dateText).toISOString() : '',
+  
+  // Cari di tempat umum
+  const chapterElements = $('#chapter_list li, .eps_lst li, .clist li, .chapter-list li, #chapterlist li');
+  
+  if (chapterElements.length > 0) {
+    chapterElements.each((_, el) => {
+      const element = $(el);
+      const linkEl = element.find('a').first();
+      if (!linkEl.length) return;
+      const dateText = element.find('.dt, .chapterdate, .chapter-date').text().trim();
+  
+      chapters.push({
+        id: extractHref(linkEl, metadata.baseUrl),
+        name: cleanText(element.find('.lchx').first()) || cleanText(linkEl),
+        uploadedAt: dateText ? parseRelativeDate(dateText).toISOString() : '',
+      });
     });
-  });
+  } else {
+    // Sapu jagat: ambil semua link yang url-nya mengandung kata 'chapter'
+    $('a').each((_, el) => {
+      const linkEl = $(el);
+      const href = linkEl.attr('href') || '';
+      if (href.includes('/chapter-') || href.includes('/ch-')) {
+        const titleText = cleanText(linkEl);
+        if (titleText.toLowerCase().includes('chapter') || titleText.toLowerCase().includes('ch.')) {
+          chapters.push({
+            id: extractHref(linkEl, metadata.baseUrl),
+            name: titleText,
+            uploadedAt: '',
+          });
+        }
+      }
+    });
+  }
 
   return {
     id: mangaId,
