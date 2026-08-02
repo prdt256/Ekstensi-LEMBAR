@@ -5,7 +5,7 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.0.9',
+  version: '1.1.0',
   lang: 'id',
   icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
@@ -69,20 +69,40 @@ function parseMangaElements($) {
   return manga;
 }
 
+async function fetchBatch(buildPageUrl, page = 1) {
+  const fetchCount = page === 1 ? 5 : 2;
+  const startPage = page === 1 ? 1 : 5 + (page - 2) * 2 + 1;
+  
+  let allManga = [];
+  let hasNextPage = false;
+
+  for (let i = startPage; i < startPage + fetchCount; i++) {
+    const url = buildPageUrl(i);
+    try {
+      const html = await getText(url);
+      if (html) {
+        const $ = parseHtml(html);
+        allManga = allManga.concat(parseMangaElements($));
+        if (/class="[^"]*next[^"]*"/.test(html) || /class="[^"]*r[^"]*"/.test(html) || $('.next').length > 0) {
+          hasNextPage = true;
+        }
+      }
+    } catch (e) {
+      // Ignore single page error
+    }
+  }
+
+  // Hilangkan duplikat jika ada
+  allManga = allManga.filter((m, index, self) => 
+    index === self.findIndex((t) => t.id === m.id)
+  );
+
+  return { manga: allManga, hasNextPage };
+}
+
 async function getPopular(page = 1) {
   try {
-    const url = page === 1 
-      ? buildUrl('/komik/')
-      : buildUrl(`/komik/page/${page}/`);
-      
-    const html = await getText(url);
-    if (!html) return { manga: [], hasNextPage: false };
-    
-    const $ = parseHtml(html);
-    const allManga = parseMangaElements($);
-    const hasNextPage = /class="[^"]*next[^"]*"/.test(html) || /class="[^"]*r[^"]*"/.test(html) || $('.next').length > 0;
-
-    return { manga: allManga, hasNextPage };
+    return await fetchBatch((p) => p === 1 ? buildUrl('/komik/') : buildUrl(`/komik/page/${p}/`), page);
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }
@@ -90,18 +110,7 @@ async function getPopular(page = 1) {
 
 async function getLatest(page = 1) {
   try {
-    const url = page === 1 
-      ? buildUrl('/komik-terbaru/')
-      : buildUrl(`/komik-terbaru/page/${page}/`);
-      
-    const html = await getText(url);
-    if (!html) return { manga: [], hasNextPage: false };
-    
-    const $ = parseHtml(html);
-    const allManga = parseMangaElements($);
-    const hasNextPage = /class="[^"]*next[^"]*"/.test(html) || /class="[^"]*r[^"]*"/.test(html) || $('.next').length > 0;
-
-    return { manga: allManga, hasNextPage };
+    return await fetchBatch((p) => p === 1 ? buildUrl('/komik-terbaru/') : buildUrl(`/komik-terbaru/page/${p}/`), page);
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }
@@ -109,18 +118,7 @@ async function getLatest(page = 1) {
 
 async function search(query, page = 1) {
   try {
-    const url = page === 1 
-      ? buildUrl(`/?s=${encodeURIComponent(query)}`)
-      : buildUrl(`/page/${page}/?s=${encodeURIComponent(query)}`);
-      
-    const html = await getText(url);
-    if (!html) return { manga: [], hasNextPage: false };
-    
-    const $ = parseHtml(html);
-    const allManga = parseMangaElements($);
-    const hasNextPage = /class="[^"]*next[^"]*"/.test(html) || /class="[^"]*r[^"]*"/.test(html) || $('.next').length > 0;
-
-    return { manga: allManga, hasNextPage };
+    return await fetchBatch((p) => p === 1 ? buildUrl(`/?s=${encodeURIComponent(query)}`) : buildUrl(`/page/${p}/?s=${encodeURIComponent(query)}`), page);
   } catch (err) {
     return { manga: [], hasNextPage: false };
   }
