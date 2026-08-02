@@ -5,7 +5,7 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.1.0',
+  version: '1.1.1',
   lang: 'id',
   icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
@@ -70,7 +70,7 @@ function parseMangaElements($) {
 }
 
 async function fetchBatch(buildPageUrl, page = 1) {
-  const fetchCount = page === 1 ? 5 : 2;
+  const fetchCount = page === 1 ? 10 : 2;
   const startPage = page === 1 ? 1 : 5 + (page - 2) * 2 + 1;
   
   let allManga = [];
