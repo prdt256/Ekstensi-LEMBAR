@@ -84,8 +84,8 @@ async function getPopular(page = 1) {
 
 async function getLatest(page = 1) {
   const url = page === 1 
-    ? buildUrl('/komik-terbaru/')
-    : buildUrl(`/komik-terbaru/page/${page}/`);
+    ? buildUrl('/komik/?order=update')
+    : buildUrl(`/komik/page/${page}/?order=update`);
     
   const html = await getText(url);
   const $ = parseHtml(html);
@@ -95,10 +95,10 @@ async function getLatest(page = 1) {
   return { manga, hasNextPage };
 }
 
-async function search(query, page = 1, filters = {}) {
-  const url = page === 1
-    ? buildUrl(`/?s=${encodeURIComponent(query)}`)
-    : buildUrl(`/page/${page}/?s=${encodeURIComponent(query)}`);
+async function search(query, page = 1) {
+  const url = page === 1 
+    ? buildUrl(`/komik/?s=${encodeURIComponent(query)}`)
+    : buildUrl(`/komik/page/${page}/?s=${encodeURIComponent(query)}`);
 
   const html = await getText(url);
   const $ = parseHtml(html);
