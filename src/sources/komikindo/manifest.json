@@ -2,9 +2,9 @@
   "id": "komikindo",
   "name": "KomikIndo",
   "baseUrl": "https://komikindo.ch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "lang": "id",
-  "icon": "https://komikindo.ch/favicon.ico",
+  "icon": "https://komikindo.ch/wp-content/uploads/2020/12/fav.png",
   "nsfw": false,
   "active": true,
   "description": "Ekstensi sumber komik untuk KomikIndo."

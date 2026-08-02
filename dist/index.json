@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-02T05:43:23.718Z",
+  "generated_at": "2026-08-02T06:03:56.781Z",
   "extensions": [
     {
       "id": "ezmanga",
@@ -15,9 +15,9 @@
     {
       "id": "komikindo",
       "name": "KomikIndo",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "lang": "id",
-      "icon": "https://komikindo.ch/favicon.ico",
+      "icon": "https://komikindo.ch/wp-content/uploads/2020/12/fav.png",
       "nsfw": false,
       "base_url": "https://komikindo.ch",
       "bundle_url": "https://raw.githubusercontent.com/prdt256/Ekstensi-LEMBAR/main/dist/komikindo.js"
