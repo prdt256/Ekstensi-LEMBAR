@@ -5,7 +5,7 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.0.5',
+  version: '1.0.6',
   lang: 'id',
   icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
@@ -71,27 +71,27 @@ function parseMangaElements($) {
 
 async function getPopular(page = 1) {
   try {
-    const promises = [];
-    const limit = 5;
+    const limit = 3;
     const startPage = (page - 1) * limit + 1;
+    let allManga = [];
+    let hasNextPage = false;
     
     for (let i = startPage; i < startPage + limit; i++) {
       const url = i === 1 
         ? buildUrl('/komik/')
         : buildUrl(`/komik/page/${i}/`);
-      promises.push(getText(url).catch(() => null));
-    }
-    
-    const htmls = await Promise.all(promises);
-    let allManga = [];
-    let hasNextPage = false;
-    
-    for (const html of htmls) {
-      if (!html) continue;
-      const $ = parseHtml(html);
-      allManga = allManga.concat(parseMangaElements($));
-      if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
-        hasNextPage = true;
+      
+      try {
+        const html = await getText(url);
+        if (html) {
+          const $ = parseHtml(html);
+          allManga = allManga.concat(parseMangaElements($));
+          if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
+            hasNextPage = true;
+          }
+        }
+      } catch (e) {
+        // Ignore single page error
       }
     }
     
@@ -108,27 +108,27 @@ async function getPopular(page = 1) {
 
 async function getLatest(page = 1) {
   try {
-    const promises = [];
-    const limit = 5;
+    const limit = 3;
     const startPage = (page - 1) * limit + 1;
+    let allManga = [];
+    let hasNextPage = false;
     
     for (let i = startPage; i < startPage + limit; i++) {
       const url = i === 1 
         ? buildUrl('/komik-terbaru/')
         : buildUrl(`/komik-terbaru/page/${i}/`);
-      promises.push(getText(url).catch(() => null));
-    }
-    
-    const htmls = await Promise.all(promises);
-    let allManga = [];
-    let hasNextPage = false;
-    
-    for (const html of htmls) {
-      if (!html) continue;
-      const $ = parseHtml(html);
-      allManga = allManga.concat(parseMangaElements($));
-      if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
-        hasNextPage = true;
+      
+      try {
+        const html = await getText(url);
+        if (html) {
+          const $ = parseHtml(html);
+          allManga = allManga.concat(parseMangaElements($));
+          if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
+            hasNextPage = true;
+          }
+        }
+      } catch (e) {
+        // Ignore single page error
       }
     }
     
@@ -144,27 +144,27 @@ async function getLatest(page = 1) {
 
 async function search(query, page = 1) {
   try {
-    const promises = [];
-    const limit = 5;
+    const limit = 3;
     const startPage = (page - 1) * limit + 1;
+    let allManga = [];
+    let hasNextPage = false;
     
     for (let i = startPage; i < startPage + limit; i++) {
       const url = i === 1 
         ? buildUrl(`/komik/?s=${encodeURIComponent(query)}`)
         : buildUrl(`/komik/page/${i}/?s=${encodeURIComponent(query)}`);
-      promises.push(getText(url).catch(() => null));
-    }
-    
-    const htmls = await Promise.all(promises);
-    let allManga = [];
-    let hasNextPage = false;
-    
-    for (const html of htmls) {
-      if (!html) continue;
-      const $ = parseHtml(html);
-      allManga = allManga.concat(parseMangaElements($));
-      if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
-        hasNextPage = true;
+      
+      try {
+        const html = await getText(url);
+        if (html) {
+          const $ = parseHtml(html);
+          allManga = allManga.concat(parseMangaElements($));
+          if ($('.pagination .next').length > 0 || $('.hpage a.r').length > 0) {
+            hasNextPage = true;
+          }
+        }
+      } catch (e) {
+        // Ignore single page error
       }
     }
     
