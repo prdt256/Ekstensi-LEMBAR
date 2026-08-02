@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generated_at": "2026-08-02T08:02:52.821Z",
+  "generated_at": "2026-08-02T08:07:43.369Z",
   "extensions": [
     {
       "id": "ezmanga",
       "name": "EZManga",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "lang": "en",
       "icon": "https://ezmanga.org/favicon.ico",
       "nsfw": false,

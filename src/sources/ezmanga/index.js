@@ -5,7 +5,7 @@ const metadata = {
   id: 'ezmanga',
   name: 'EZManga',
   baseUrl: 'https://ezmanga.org',
-  version: '1.0.4',
+  version: '1.0.5',
   lang: 'en',
   icon: 'https://ezmanga.org/favicon.ico',
   nsfw: false,
@@ -19,7 +19,7 @@ function parseMangaElements($) {
     const element = $(el);
     const title = element.attr('aria-label') || element.find('h3, .title').text().trim();
     const href = element.attr('href') || '';
-    const img = getImageSrc(element.find('img.cover-img, img[src*="upload"]'));
+    const img = getImageSrc(element.find('img'));
     if (title && href && !href.includes('chapter') && !manga.some(m => m.id === href)) {
       manga.push({
         id: href.startsWith('http') ? new URL(href).pathname : href,
