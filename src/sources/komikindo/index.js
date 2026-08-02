@@ -15,85 +15,88 @@ function buildUrl(path) {
   return `${metadata.baseUrl}/${path.replace(/^\//, '')}`;
 }
 
-async function getPopular(page = 1) {
-  const url = buildUrl(`/?page=${page}`);
-  const html = await getText(url);
-  const $ = parseHtml(html);
-
+function parseMangaElements($) {
   const manga = [];
-  $('.animepost').each((_, el) => {
+  const selectors = ['.animepost', '.list-update_item', '.bsx', '.film-list .animepost', '.sorlist .item'];
+  
+  let elements = $();
+  for (const selector of selectors) {
+    const found = $(selector);
+    if (found.length > 0) {
+      elements = found;
+      break;
+    }
+  }
+
+  elements.each((_, el) => {
     const element = $(el);
-    const linkEl = element.find('a');
+    const linkEl = element.find('a').first();
+    if (!linkEl.length) return;
     
-    // Some titles might have "Komik " prefix, we can optionally strip it but it's fine for now
-    let title = element.find('h4').text().trim() || element.find('.tt h4').text().trim() || linkEl.attr('title');
+    let title = element.find('h4').text().trim() || 
+                element.find('.tt h4').text().trim() || 
+                element.find('.title').text().trim() ||
+                linkEl.attr('title') || '';
+
+    if (!title) return;
     if (title.startsWith('Komik ')) {
       title = title.substring(6).trim();
     }
 
-    manga.push({
-      id: extractHref(linkEl, metadata.baseUrl),
-      title: title,
-      coverUrl: getImageSrc(element.find('img')),
-      status: element.find('.status').text().trim().toLowerCase() || 'unknown',
-    });
+    const coverEl = element.find('img').first();
+    const coverUrl = getImageSrc(coverEl);
+    const id = extractHref(linkEl, metadata.baseUrl);
+
+    if (id && !manga.some(m => m.id === id)) {
+      manga.push({
+        id,
+        title,
+        coverUrl,
+        latestChapter: element.find('.chapter, .epxs').text().trim(),
+        status: element.find('.status').text().trim().toLowerCase() || 'unknown',
+      });
+    }
   });
 
-  const hasNextPage = $('.pagination .next').length > 0;
+  return manga;
+}
+
+async function getPopular(page = 1) {
+  const url = page === 1 
+    ? buildUrl('/komik/?status=ongoing&type=manga&order=popular')
+    : buildUrl(`/komik/page/${page}/?status=ongoing&type=manga&order=popular`);
+    
+  const html = await getText(url);
+  const $ = parseHtml(html);
+
+  const manga = parseMangaElements($);
+  const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
   return { manga, hasNextPage };
 }
 
 async function getLatest(page = 1) {
-  const url = buildUrl(`/komik-terbaru/page/${page}/`);
+  const url = page === 1 
+    ? buildUrl('/komik-terbaru/')
+    : buildUrl(`/komik-terbaru/page/${page}/`);
+    
   const html = await getText(url);
   const $ = parseHtml(html);
 
-  const manga = [];
-  $('.animepost').each((_, el) => {
-    const element = $(el);
-    const linkEl = element.find('a');
-    
-    let title = element.find('h4').text().trim() || element.find('.tt h4').text().trim() || linkEl.attr('title');
-    if (title.startsWith('Komik ')) {
-      title = title.substring(6).trim();
-    }
-
-    manga.push({
-      id: extractHref(linkEl, metadata.baseUrl),
-      title: title,
-      coverUrl: getImageSrc(element.find('img')),
-      status: 'unknown',
-    });
-  });
-
+  const manga = parseMangaElements($);
   const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
   return { manga, hasNextPage };
 }
 
 async function search(query, page = 1, filters = {}) {
-  const url = buildUrl(`/page/${page}/?s=${encodeURIComponent(query)}`);
+  const url = page === 1
+    ? buildUrl(`/?s=${encodeURIComponent(query)}`)
+    : buildUrl(`/page/${page}/?s=${encodeURIComponent(query)}`);
+
   const html = await getText(url);
   const $ = parseHtml(html);
 
-  const manga = [];
-  $('.animepost').each((_, el) => {
-    const element = $(el);
-    const linkEl = element.find('a');
-    
-    let title = element.find('h4').text().trim() || element.find('.tt h4').text().trim() || linkEl.attr('title');
-    if (title.startsWith('Komik ')) {
-      title = title.substring(6).trim();
-    }
-
-    manga.push({
-      id: extractHref(linkEl, metadata.baseUrl),
-      title: title,
-      coverUrl: getImageSrc(element.find('img')),
-      status: 'unknown',
-    });
-  });
-
-  const hasNextPage = $('.pagination .next').length > 0;
+  const manga = parseMangaElements($);
+  const hasNextPage = $('.pagination .next').length > 0 || $('.hpage a.r').length > 0;
   return { manga, hasNextPage };
 }
 
@@ -137,15 +140,16 @@ async function getDetail(mangaId) {
   );
 
   const chapters = [];
-  $('#chapter_list li').each((_, el) => {
+  $('#chapter_list li, .clist li, .chapter-list li').each((_, el) => {
     const element = $(el);
-    const linkEl = element.find('a');
-    const dateText = element.find('.dt').text().trim();
+    const linkEl = element.find('a').first();
+    if (!linkEl.length) return;
+    const dateText = element.find('.dt, .chapterdate').text().trim();
 
     chapters.push({
       id: extractHref(linkEl, metadata.baseUrl),
       name: cleanText(element.find('.lchx').first()) || cleanText(linkEl),
-      uploadedAt: parseRelativeDate(dateText).toISOString(),
+      uploadedAt: dateText ? parseRelativeDate(dateText).toISOString() : '',
     });
   });
 
@@ -168,7 +172,7 @@ async function getPageList(chapterId) {
   const $ = parseHtml(html);
 
   const pages = [];
-  $('#chimg-auh img').each((_, el) => {
+  $('#chimg-auh img, #readerarea img').each((_, el) => {
     const src = getImageSrc($(el));
     if (src && src.startsWith('http')) pages.push(src);
   });
