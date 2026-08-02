@@ -5,9 +5,9 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.0.0',
+  version: '1.0.1',
   lang: 'id',
-  icon: 'https://komikindo.ch/favicon.ico',
+  icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
 };
 
@@ -19,14 +19,7 @@ function parseMangaElements($) {
   const manga = [];
   const selectors = ['.animepost', '.list-update_item', '.bsx', '.film-list .animepost', '.sorlist .item'];
   
-  let elements = $();
-  for (const selector of selectors) {
-    const found = $(selector);
-    if (found.length > 0) {
-      elements = found;
-      break;
-    }
-  }
+  const elements = $(selectors.join(', '));
 
   elements.each((_, el) => {
     const element = $(el);
@@ -136,7 +129,7 @@ async function getDetail(mangaId) {
     info['Judul Alternatif'] = altTitle;
   }
 
-  $('.komik_info-content-meta span').each((_, el) => {
+  $('.komik_info-content-meta span, .infox .spe span').each((_, el) => {
     const text = cleanText($(el));
     // Deteksi "Pengarang: Oda" atau "Pengarang : Oda" dll
     const lowerText = text.toLowerCase();
@@ -153,7 +146,7 @@ async function getDetail(mangaId) {
       const value = parts.slice(1).join(':').trim();
       
       if (key && value && value.toLowerCase() !== 'n/a' && value !== '-' && value !== '?') {
-        if (key === 'Status') statusText = value.toLowerCase();
+        if (key.toLowerCase() === 'status') statusText = value.toLowerCase();
         info[key] = value;
       }
     }
