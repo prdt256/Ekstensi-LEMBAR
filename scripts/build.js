@@ -144,6 +144,7 @@ async function generateIndex(manifests, baseUrl = '') {
       lang: m.lang,
       icon: m.icon,
       nsfw: m.nsfw,
+      base_url: m.baseUrl || m.base_url || '',
       bundle_url: baseUrl ? `${baseUrl.replace(/\/$/, '')}/dist/${m.id}.js` : `dist/${m.id}.js`,
     })),
   };
