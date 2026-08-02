@@ -143,61 +143,72 @@ async function getDetail(mangaId) {
     const html = await getText(url);
     const $ = parseHtml(html);
 
-    // Madara: judul ada di .post-title h1 atau h1
-    const title = cleanText($('.post-title h1').first())
-      || cleanText($('.post-title').first())
-      || cleanText($('h1').first());
+    let title = 'Unknown Title';
+    try {
+      title = cleanText($('.post-title h1').first())
+        || cleanText($('.post-title').first())
+        || cleanText($('h1').first()) || title;
+    } catch (e) {}
 
-    // Cover
-    const coverUrl = getImageSrc($('.summary_image img').first())
-      || getImageSrc($('.tab-summary img').first())
-      || getImageSrc($('img').first())
-      || '';
+    let coverUrl = '';
+    try {
+      coverUrl = getImageSrc($('.summary_image img').first())
+        || getImageSrc($('.tab-summary img').first())
+        || getImageSrc($('img').first())
+        || '';
+    } catch (e) {}
 
-    // Deskripsi
-    const description = cleanText($('.summary__content, .description-summary .summary__content, .manga-excerpt').first())
-      || cleanText($('.entry-content').first())
-      || '';
+    let description = '';
+    try {
+      description = cleanText($('.summary__content, .description-summary .summary__content, .manga-excerpt').first())
+        || cleanText($('.entry-content').first())
+        || '';
+    } catch (e) {}
 
-    // Metadata
     let status = 'unknown';
     let authors = [];
     let genres = [];
 
-    $('.post-content_item').each((_, el) => {
-      const label = cleanText($(el).find('.summary-heading').first()).toLowerCase();
-      const value = cleanText($(el).find('.summary-content').first());
+    try {
+      $('.post-content_item').each((_, el) => {
+        const label = cleanText($(el).find('.summary-heading').first()).toLowerCase();
+        const value = cleanText($(el).find('.summary-content').first());
 
-      if (label.includes('status')) status = value.toLowerCase();
-      if (label.includes('author') || label.includes('artist')) {
-        authors = value.split(',').map(a => a.trim()).filter(Boolean);
-      }
-    });
-
-    genres = parseGenres(
-      $('.genres-content a, .tags-content a').map((_, el) => $(el).text()).get()
-    );
-
-    // Chapters — Madara standar: li.wp-manga-chapter
-    const chapters = [];
-    $('li.wp-manga-chapter, .listing-chapters_wrap li').each((_, el) => {
-      const element = $(el);
-      const linkEl = element.find('a').first();
-      if (!linkEl.length) return;
-
-      const dateText = element.find('.chapter-release-date, .release-date, i').text().trim();
-      chapters.push({
-        id: (linkEl.attr('href') || '').startsWith('http')
-          ? new URL(linkEl.attr('href')).pathname
-          : (linkEl.attr('href') || ''),
-        name: cleanText(linkEl),
-        uploadedAt: dateText ? parseRelativeDate(dateText).toISOString() : '',
+        if (label.includes('status')) status = value.toLowerCase();
+        if (label.includes('author') || label.includes('artist')) {
+          authors = value.split(',').map(a => a.trim()).filter(Boolean);
+        }
       });
-    });
+    } catch (e) {}
+
+    try {
+      genres = parseGenres(
+        $('.genres-content a, .tags-content a').map((_, el) => $(el).text()).get()
+      );
+    } catch (e) {}
+
+    const chapters = [];
+    try {
+      // Lebih banyak fallback selector untuk chapter list
+      $('li.wp-manga-chapter, .listing-chapters_wrap li, .chapter-list li').each((_, el) => {
+        const element = $(el);
+        const linkEl = element.find('a').first();
+        if (!linkEl.length) return;
+
+        const dateText = element.find('.chapter-release-date, .release-date, i').text().trim();
+        chapters.push({
+          id: (linkEl.attr('href') || '').startsWith('http')
+            ? new URL(linkEl.attr('href')).pathname
+            : (linkEl.attr('href') || ''),
+          name: cleanText(linkEl),
+          uploadedAt: dateText ? parseRelativeDate(dateText).toISOString() : '',
+        });
+      });
+    } catch (e) {}
 
     return {
       id: mangaId,
-      title: title || 'Unknown Title',
+      title,
       coverUrl,
       description,
       status,
