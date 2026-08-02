@@ -36,9 +36,24 @@ function parseMangaElements($) {
       title = title.substring(6).trim();
     }
 
-    const coverEl = element.find('img').first();
-    const coverUrl = getImageSrc(coverEl);
+    let coverEl = element.find('img[itemprop="image"]');
+    if (!coverEl.length) coverEl = element.find('.limit img');
+    if (!coverEl.length) coverEl = element.find('img');
+    const coverUrl = getImageSrc(coverEl.first());
+    
     const id = extractHref(linkEl, metadata.baseUrl);
+
+    let statusText = element.find('.status').text().trim().toLowerCase();
+    if (!statusText) {
+      statusText = element.find('.status-skroep').text().trim().toLowerCase();
+    }
+    
+    const statusMap = {
+      'ongoing': 'ongoing', 'berjalan': 'ongoing',
+      'completed': 'completed', 'tamat': 'completed',
+      'hiatus': 'hiatus',
+    };
+    const status = statusMap[statusText] || 'unknown';
 
     if (id && !manga.some(m => m.id === id)) {
       manga.push({
@@ -46,7 +61,7 @@ function parseMangaElements($) {
         title,
         coverUrl,
         latestChapter: element.find('.chapter, .epxs').text().trim(),
-        status: element.find('.status').text().trim().toLowerCase() || 'unknown',
+        status,
       });
     }
   });
@@ -56,8 +71,8 @@ function parseMangaElements($) {
 
 async function getPopular(page = 1) {
   const url = page === 1 
-    ? buildUrl('/komik/?status=ongoing&type=manga&order=popular')
-    : buildUrl(`/komik/page/${page}/?status=ongoing&type=manga&order=popular`);
+    ? buildUrl('/komik/?order=popular')
+    : buildUrl(`/komik/page/${page}/?order=popular`);
     
   const html = await getText(url);
   const $ = parseHtml(html);
@@ -134,7 +149,7 @@ async function getDetail(mangaId) {
     // Deteksi "Pengarang: Oda" atau "Pengarang : Oda" dll
     const lowerText = text.toLowerCase();
     if (lowerText.includes('pengarang') || lowerText.includes('author')) {
-      const match = text.match(/(?:Pengarang|Author)\s*:\s*(.+)/i);
+      const match = text.match(/(?:Pengarang|Authors?)\s*:\s*(.+)/i);
       if (match && match[1]) {
         authors = match[1].split(',').map(a => a.trim());
       }
