@@ -5,7 +5,7 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.0.4',
+  version: '1.0.5',
   lang: 'id',
   icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
@@ -72,7 +72,7 @@ function parseMangaElements($) {
 async function getPopular(page = 1) {
   try {
     const promises = [];
-    const limit = 3;
+    const limit = 5;
     const startPage = (page - 1) * limit + 1;
     
     for (let i = startPage; i < startPage + limit; i++) {
@@ -109,7 +109,7 @@ async function getPopular(page = 1) {
 async function getLatest(page = 1) {
   try {
     const promises = [];
-    const limit = 3;
+    const limit = 5;
     const startPage = (page - 1) * limit + 1;
     
     for (let i = startPage; i < startPage + limit; i++) {
@@ -145,7 +145,7 @@ async function getLatest(page = 1) {
 async function search(query, page = 1) {
   try {
     const promises = [];
-    const limit = 3;
+    const limit = 5;
     const startPage = (page - 1) * limit + 1;
     
     for (let i = startPage; i < startPage + limit; i++) {
