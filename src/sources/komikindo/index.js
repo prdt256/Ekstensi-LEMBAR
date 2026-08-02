@@ -5,7 +5,7 @@ const metadata = {
   id: 'komikindo',
   name: 'KomikIndo',
   baseUrl: 'https://komikindo.ch',
-  version: '1.0.7',
+  version: '1.0.8',
   lang: 'id',
   icon: 'https://komikindo.ch/wp-content/uploads/2020/12/fav.png',
   nsfw: false,
@@ -110,8 +110,8 @@ async function getLatest(page = 1) {
 async function search(query, page = 1) {
   try {
     const url = page === 1 
-      ? buildUrl(`/komik/?s=${encodeURIComponent(query)}`)
-      : buildUrl(`/komik/page/${page}/?s=${encodeURIComponent(query)}`);
+      ? buildUrl(`/?s=${encodeURIComponent(query)}`)
+      : buildUrl(`/page/${page}/?s=${encodeURIComponent(query)}`);
       
     const html = await getText(url);
     if (!html) return { manga: [], hasNextPage: false };
