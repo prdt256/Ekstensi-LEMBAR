@@ -5,7 +5,7 @@ const metadata = {
   id: 'ezmanga',
   name: 'EZManga',
   baseUrl: 'https://ezmanga.org',
-  version: '1.0.5',
+  version: '1.0.6',
   lang: 'en',
   icon: 'https://ezmanga.org/favicon.ico',
   nsfw: false,
