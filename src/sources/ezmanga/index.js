@@ -134,9 +134,8 @@ async function getDetail(mangaId) {
       }
     }
 
-    if (chapters.length === 0) {
-      chapters.push({ id: mangaId + '/dummy', name: 'Tidak ada chapter' });
-    }
+    // Jika tidak ada chapter yang ditemukan, biarkan array kosong.
+    // Android akan menampilkan pesan "Tidak ada chapter" lebih tepat.
 
     const info = {};
     if (detailData.alternative) info['Alternatif'] = detailData.alternative;
@@ -160,25 +159,13 @@ async function getDetail(mangaId) {
       info,
     };
   } catch (err) {
-    return {
-      id: mangaId,
-      title: 'Gagal memuat API',
-      coverUrl: metadata.icon,
-      description: 'Detail gagal: ' + err.message,
-      status: 'unknown',
-      genres: [],
-      authors: [],
-      chapters: [{ id: mangaId + '/error', name: 'Gagal memuat chapter' }],
-    };
+    // Lempar error agar Android dapat menampilkan pesan error yang tepat
+    throw new Error('Gagal memuat detail: ' + err.message);
   }
 }
 
 async function getPageList(chapterId) {
   try {
-    if (chapterId.endsWith('/error') || chapterId.endsWith('/dummy')) {
-      return [metadata.icon];
-    }
-    
     const url = `${API_BASE}${chapterId}`;
     const data = await getJson(url);
 
@@ -189,12 +176,11 @@ async function getPageList(chapterId) {
       });
     }
 
-    if (pages.length === 0) {
-      return [metadata.icon];
-    }
+    // Kembalikan array kosong jika tidak ada gambar agar Android tampilkan error
     return pages;
   } catch (err) {
-    return [metadata.icon];
+    // Kembalikan array kosong — Android akan menampilkan pesan error
+    return [];
   }
 }
 
